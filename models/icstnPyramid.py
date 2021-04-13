@@ -39,10 +39,12 @@ class ICSTNPyramid(nn.Module): # build Inverse Compositional STN
 
         self.dof = [] 
         for motion in list_blocks_types:
-            if motion is 'trans' or 'rot': # NOTE degree-of-freedom to predict (for now translation only)
-                self.dof.append(3)
-            elif motion is 'tilt':
+            if motion == 'trans' or motion == 'rot': 
+                self.dof.append(3) # NOTE degree-of-freedom to predict (for now translation only)
+            elif motion == 'tilt':
                 self.dof.append(2)     
+            elif motion == 'rot&trans':
+                self.dof.append(6)
 
         self.avgPool = False # True False
 
@@ -431,30 +433,3 @@ def PoseNet_ICSTN_Pyramid(list_blocks_types, img_height, img_width, device, self
     total_params_count = sum(p.numel() for name, p in PoseNet_ICSTN_model.named_parameters() if p.requires_grad)
     print("Total number of trainable parameters in {} PoseNet blocks: {}".format(len(list_blocks_types), total_params_count))
     return PoseNet_ICSTN_model
-
-# class uncertainty_net(nn.Module): # TODO
-
-#     def __init__(self):
-#         super(uncertainty_net,self).__init__()
-#         print("uncertainty net initialized!")
-
-#     def init_weights(self):
-#         print("Conv weights xavier_uniform_ !")
-#         for m in self.modules():
-#             if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
-#                 xavier_uniform_(m.weight)
-#                 # kaiming_normal_(m.weight, a=0.1, nonlinearity='leaky_relu')
-#                 if m.bias is not None:
-#                     zeros_(m.bias)
-#             elif isinstance(m, nn.Linear):
-#                 # zeros_(m.weight) # use pytorch default init.kaiming_uniform_(self.weight, a=math.sqrt(5))
-#                 if m.bias is not None:
-#                     zeros_(m.bias)
-
-#     def weight_parameters(self):
-#         return [param for name, param in self.named_parameters() if 'weight' in name]
-
-#     def bias_parameters(self):
-#         return [param for name, param in self.named_parameters() if 'bias' in name]
-
-#     def forward(self,batch_img1,batch_img2): 

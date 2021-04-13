@@ -44,10 +44,12 @@ class FPE_Net(nn.Module):
 
         self.dof = [] 
         for motion in list_blocks_types:
-            if motion is 'trans' or 'rot': # NOTE degree-of-freedom to predict (for now translation only)
-                self.dof.append(3)
-            elif motion is 'tilt':
-                self.dof.append(2)  
+            if motion == 'trans' or motion == 'rot': 
+                self.dof.append(3) # NOTE degree-of-freedom to predict (for now translation only)
+            elif motion == 'tilt':
+                self.dof.append(2)     
+            elif motion == 'rot&trans':
+                self.dof.append(6)
 
         if self.show_img:
             cv2.namedWindow('before', cv2.WINDOW_NORMAL)
