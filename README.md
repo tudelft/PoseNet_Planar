@@ -4,9 +4,7 @@ In this project, we investigate efficient small-sized convolutional neural netwo
 # Publication
 CNN-based Ego-Motion Estimation for Fast MAV Maneuvers (accepted by ICRA 2021)
 
-Conference Proceeding: to be published
-
-ArXiv Pre-print (with Appendix): https://arxiv.org/abs/2101.01841 (to be updated)
+Article (with Appendix): https://arxiv.org/abs/2101.01841
 
 Videos: https://youtu.be/BMdh6dmLgrM https://youtu.be/Uz9pNpn94jU
 
@@ -50,6 +48,18 @@ Use the following command to run the network on indoor 45 degree downward facing
 python3 main.py --flight --show-img
 ```
 <img src='https://github.com/YingfuXu/PoseNet_Planar/blob/main/example_images/photometric_error_example/before.png' width=256>  <img src='https://github.com/YingfuXu/PoseNet_Planar/blob/main/example_images/photometric_error_example/after.png' width=256>
+
+# Citation
+
+If you use this repository in an academic context, please cite the following:
+```
+@article{xu2021cnn,
+  title={CNN-based Ego-Motion Estimation for Fast MAV Maneuvers},
+  author={Xu, Yingfu and de Croon, Guido CHE},
+  journal={arXiv preprint arXiv:2101.01841},
+  year={2021}
+}
+```
 
 # Authors and Maintainers
 Yingfu Xu (y.xu-6@tudelft.nl) and Prof. Dr. Guido de Croon from Micro Air Vehicle Laboratory (MAVLab), TU Delft, The Netherlands.
