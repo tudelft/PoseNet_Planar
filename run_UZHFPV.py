@@ -118,7 +118,7 @@ def flight_dataset_test(posenet_model, device):
     print('Initial Time Stamp:', initialTimeStamp) # IMU first measurement
     timeStampOld = initialTimeStamp
 
-    # # imu data main loop
+    # imu data main loop
     for line in lines: # imu data main loop
         timeStamp = float(line.split(' ')[1])
         wx = float(line.split(' ')[2])

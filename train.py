@@ -145,7 +145,7 @@ def validate_pose(validate_loader, PoseNet_model, epoch, validate_writer):
         input_img1 = inputImgs[0].to(device)
         input_img2 = inputImgs[1].to(device) # torch.Size([batch_size, 3, 320, 448])
 
-        # 1. 解算GT # torch.Size([batch_size, 8])
+        # 1. ground truth # torch.Size([batch_size, 8])
         homo8_1to2_GT,homo8_1to2_initial = absolutePose2homo8Pose(pose_img1, pose_img2, batch_size, rot_random_bias=0.0, slope_random_bias=0.0) # NOTE train without attitude noise
         homo8_2to1_GT,homo8_2to1_initial = absolutePose2homo8Pose(pose_img2, pose_img1, batch_size, rot_random_bias=0.0, slope_random_bias=0.0)
 
@@ -161,7 +161,7 @@ def validate_pose(validate_loader, PoseNet_model, epoch, validate_writer):
         homo8_1to2_blockError = homo8_1to2_GT - homo8_1to2_nn
         homo8_2to1_blockError = homo8_2to1_GT - homo8_2to1_nn
         endPoint_loss = torch.mean(charbonnier(homo8_1to2_blockError[:, 5:])) + torch.mean(charbonnier(homo8_2to1_blockError[:, 5:]))
-        # predict tilt NOTE
+        # predict tilt TODO
         # endPoint_loss = torch.mean(charbonnier(homo8_1to2_blockError[:, 0:2])) + torch.mean(charbonnier(homo8_2to1_blockError[:, 0:2]))
 
         validate_endPoint_loss.update(endPoint_loss.item(), n=batch_size)
@@ -171,8 +171,7 @@ def validate_pose(validate_loader, PoseNet_model, epoch, validate_writer):
 
         if batch_index % args.print_freq == 0:
             print('Test: [{0}/{1}]\t Time {2}\t Bidirection_Loss {3}'
-                .format(batch_index, epoch_size, batch_time, # len(validate_loader)
-                        validate_endPoint_loss))
+                .format(batch_index, epoch_size, batch_time, validate_endPoint_loss))
     if batch_index > 6:
         print('WarpingTime(ms):', warping_time.avg, 'NetworkTime(ms):', net_time.avg, 'Total fps:', 1000.0/(warping_time.avg+net_time.avg))
     print(' * EPE loss validate: {:.3f}, Epoch: {}'.format(validate_endPoint_loss.avg, epoch))

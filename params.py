@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser(description='PyTorch PoseNet',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 # dataset
-parser.add_argument('--dataset', metavar='DATASET', default='mscoco_planar', # planar_scene flying_chairs
+parser.add_argument('--dataset', metavar='DATASET', default='mscoco_planar',
                     choices=dataset_names,
                     help='dataset type : ' +
                     ' | '.join(dataset_names))
