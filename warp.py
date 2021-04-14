@@ -4,7 +4,7 @@ import math
 import torch.nn.functional as F
 import time
 
-from util import poseVec2homoMtrx
+# from util import poseVec2homoMtrx
 
 D2R = math.pi / 180.0
 
@@ -64,7 +64,7 @@ class WarpImg:
 
         return grid_xy1 
 
-    def transformImageTrans_Single(self,batch_imgs,batch_transVec,batch_rotMtrx,batch_planeNormVec): # trace model for cpp
+    def transformImage_Single(self,batch_imgs,batch_transVec,batch_rotMtrx,batch_planeNormVec): # trace model for cpp
         
         sample_grid_normed_batch_list = []
 
@@ -90,7 +90,7 @@ class WarpImg:
 
         return batch_warped_imgs
 
-    def transformImageTrans(self,batch_imgs,batch_transVec,batch_rotMtrx,batch_planeNormVec,move_out_mask=False): 
+    def transformImage(self,batch_imgs,batch_transVec,batch_rotMtrx,batch_planeNormVec,move_out_mask=False): 
         
         batch_size = batch_imgs.size()[0]
         sample_grid_normed_batch_list = []

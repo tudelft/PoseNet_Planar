@@ -13,8 +13,8 @@ from util import absolutePose2homo8Pose
 from ahrs import *
 
 # NOTE change the dataset directory and the number of sequence to run here
-dataset_folder = '/home/adr/datasets/UZHFPV/' # /home/adr/datasets/UZHFPV/ # /home/yingfu/datasets/UZH-FPV/raw_set_test/
-sequence_num = '4' # 2 4 9 12 13 14
+dataset_folder = '/home/yingfu/datasets/UZH-FPV/raw_set_test/' # /home/adr/datasets/UZHFPV/
+sequence_num = '14' # 2 4 9 12 13 14
 
 # whether to use the prior pose
 use_prior_pose = False #  False True

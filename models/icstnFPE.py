@@ -121,10 +121,10 @@ class FPE_Net(nn.Module):
     def bias_parameters(self):
         return [param for name, param in self.named_parameters() if 'bias' in name]
 
-    def show_imgs_after(self, batch_img1, batch_img2_deRot, batch_nn_trans_sum, zeroRotMtrx, batch_planeNormVecImg1):
-        batch_img2_warped_after = self.img_warper_dict[0].transformImageTrans(batch_img2_deRot,batch_nn_trans_sum,zeroRotMtrx,batch_planeNormVecImg1)
-        imgs_after = torch.abs(batch_img1 - batch_img2_warped_after)[0, 0, :, :]
-        show_imgs = torch.cat((batch_img1[0, :, :, :], batch_img2_warped_after[0, :, :, :], imgs_after.unsqueeze(0)), dim=1).to('cpu')
+    def show_imgs_after(self, batch_img1, batch_img2, batch_trans, batch_rotMtrx, batch_planeNormVecImg1):
+        batch_img2_warped = self.img_warper_dict[0].transformImage(batch_img2,batch_trans,batch_rotMtrx,batch_planeNormVecImg1)
+        imgs_after = torch.abs(batch_img1 - batch_img2_warped)[0, 0, :, :]
+        show_imgs = torch.cat((batch_img1[0, :, :, :], batch_img2_warped[0, :, :, :], imgs_after.unsqueeze(0)), dim=1).to('cpu')
         cv2.imshow('after', show_imgs.detach().numpy().transpose(1, 2, 0))
         cv2.waitKey(-1)
 
@@ -151,9 +151,9 @@ class FPE_Net(nn.Module):
 
         # warp original image to derotate
         if self.trace_model: # for cpp
-            batch_img2_deRot = self.img_warper_dict[0].transformImageTrans_Single(batch_img2,batch_homo8[:, 5:],batch_rotMtrx,batch_planeNormVecImg1)
+            batch_img2_deRot = self.img_warper_dict[0].transformImage_Single(batch_img2,batch_homo8[:, 5:],batch_rotMtrx,batch_planeNormVecImg1)
         else:
-            batch_img2_deRot = self.img_warper_dict[0].transformImageTrans(batch_img2,batch_homo8[:, 5:],batch_rotMtrx,batch_planeNormVecImg1)
+            batch_img2_deRot = self.img_warper_dict[0].transformImage(batch_img2,batch_homo8[:, 5:],batch_rotMtrx,batch_planeNormVecImg1)
     
         if self.show_img:
             imgs_before = torch.abs(batch_img1 - batch_img2_deRot)[0, 0, :, :]
@@ -188,7 +188,7 @@ class FPE_Net(nn.Module):
             batch_homo8 = compose_trans(batch_size, batch_nn_trans_1, batch_homo8, batch_rotMtrx) # 
             if self.self_sup:
                 # NOTE in self-sup, it needs to warp the original batch_img2 to get the valid_pixel_mask.
-                batch_img2_warped_2,valid_pixel_mask = self.img_warper_dict[0].transformImageTrans(batch_img2,batch_homo8[:, 5:],batch_rotMtrx,batch_planeNormVecImg1,move_out_mask=True)
+                batch_img2_warped_2,valid_pixel_mask = self.img_warper_dict[0].transformImage(batch_img2,batch_homo8[:, 5:],batch_rotMtrx,batch_planeNormVecImg1,move_out_mask=True)
                 batch_nn_blocks_list.append((batch_img2_warped_2 - batch_img1)*valid_pixel_mask.float())
                 # batch_nn_blocks_list.append([batch_img2_warped_2*valid_pixel_mask.float(), batch_img1*valid_pixel_mask.float()]) # TODO SSIM
             else:
@@ -200,9 +200,9 @@ class FPE_Net(nn.Module):
 
         ## block 2
         if self.trace_model: # for cpp
-            feature_map2_pyr2_warped = self.img_warper_dict[3].transformImageTrans_Single(feature_map2_pyr2,batch_nn_trans_sum,zeroRotMtrx,batch_planeNormVecImg1)
+            feature_map2_pyr2_warped = self.img_warper_dict[3].transformImage_Single(feature_map2_pyr2,batch_nn_trans_sum,zeroRotMtrx,batch_planeNormVecImg1)
         else:
-            feature_map2_pyr2_warped = self.img_warper_dict[3].transformImageTrans(feature_map2_pyr2,batch_nn_trans_sum,zeroRotMtrx,batch_planeNormVecImg1)
+            feature_map2_pyr2_warped = self.img_warper_dict[3].transformImage(feature_map2_pyr2,batch_nn_trans_sum,zeroRotMtrx,batch_planeNormVecImg1)
 
         cat_feature_maps_pyr2 = torch.cat((feature_map1_pyr2, feature_map2_pyr2_warped), dim=1)
             
@@ -218,7 +218,7 @@ class FPE_Net(nn.Module):
         if self.training:
             batch_homo8 = compose_trans(batch_size, batch_nn_trans_2, batch_homo8, batch_rotMtrx) # 
             if self.self_sup:
-                batch_img2_warped_3,valid_pixel_mask = self.img_warper_dict[0].transformImageTrans(batch_img2,batch_homo8[:, 5:],batch_rotMtrx,batch_planeNormVecImg1,move_out_mask=True)
+                batch_img2_warped_3,valid_pixel_mask = self.img_warper_dict[0].transformImage(batch_img2,batch_homo8[:, 5:],batch_rotMtrx,batch_planeNormVecImg1,move_out_mask=True)
                 batch_nn_blocks_list.append((batch_img2_warped_3 - batch_img1)*valid_pixel_mask.float())
                 # batch_nn_blocks_list.append([batch_img2_warped_3*valid_pixel_mask.float(), batch_img1*valid_pixel_mask.float()]) # TODO SSIM
             else:
@@ -231,9 +231,9 @@ class FPE_Net(nn.Module):
 
         ## block 3
         if self.trace_model: # for cpp
-            feature_map2_pyr1_warped = self.img_warper_dict[2].transformImageTrans_Single(feature_map2_pyr1,batch_nn_trans_sum,zeroRotMtrx,batch_planeNormVecImg1)
+            feature_map2_pyr1_warped = self.img_warper_dict[2].transformImage_Single(feature_map2_pyr1,batch_nn_trans_sum,zeroRotMtrx,batch_planeNormVecImg1)
         else:
-            feature_map2_pyr1_warped = self.img_warper_dict[2].transformImageTrans(feature_map2_pyr1,batch_nn_trans_sum,zeroRotMtrx,batch_planeNormVecImg1)
+            feature_map2_pyr1_warped = self.img_warper_dict[2].transformImage(feature_map2_pyr1,batch_nn_trans_sum,zeroRotMtrx,batch_planeNormVecImg1)
 
         cat_feature_maps_pyr1 = torch.cat((feature_map1_pyr1, feature_map2_pyr1_warped), dim=1)
 
@@ -252,10 +252,12 @@ class FPE_Net(nn.Module):
         if self.training:
             batch_homo8 = compose_trans(batch_size, batch_nn_trans_3, batch_homo8, batch_rotMtrx) # 
             if self.self_sup:
-                batch_img2_warped_4,valid_pixel_mask = self.img_warper_dict[0].transformImageTrans(batch_img2,batch_homo8[:, 5:],batch_rotMtrx,batch_planeNormVecImg1,move_out_mask=True)
+                batch_img2_warped_4,valid_pixel_mask = self.img_warper_dict[0].transformImage(batch_img2,batch_homo8[:, 5:],batch_rotMtrx,batch_planeNormVecImg1,move_out_mask=True)
                 batch_nn_blocks_list.append((batch_img2_warped_4 - batch_img1)*valid_pixel_mask.float())
                 # batch_nn_blocks_list.append([batch_img2_warped_4*valid_pixel_mask.float(), batch_img1*valid_pixel_mask.float()]) # TODO SSIM
             else:
+                batch_nn_blocks_list.append(batch_homo8)
+            if self.self_sup:
                 batch_nn_blocks_list.append(batch_homo8)
             return batch_nn_blocks_list
         else:

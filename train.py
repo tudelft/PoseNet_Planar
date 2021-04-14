@@ -88,6 +88,13 @@ def train_pose(train_loader, PoseNet_model, optimizer, epoch, train_writer, n_it
         batch_time.update(time.time() - end)
         end = time.time()
 
+        # in self-supervised training, the block_loss is the photometric error, 
+        # while validate_endPoint_loss is the pose error, not comparable! So here recalculate the pose error
+        if args.self_supervised:
+            homo8_1to2_blockError = homo8_1to2_GT - homo8_1to2_nn_blockList[PoseNet_model.num_blocks]
+            homo8_2to1_blockError = homo8_2to1_GT - homo8_2to1_nn_blockList[PoseNet_model.num_blocks]
+            block_loss = torch.mean(charbonnier(homo8_1to2_blockError[:, 5:])) + torch.mean(charbonnier(homo8_2to1_blockError[:, 5:])) # NOTE only trans error for now
+
         train_endPoint_loss.update(block_loss.item(), n=batch_size) # the final loss is the last block_loss
 
         if batch_index % args.print_freq == 0:

@@ -226,10 +226,10 @@ class ICSTNStandard(nn.Module):
     def bias_parameters(self):
         return [param for name, param in self.named_parameters() if 'bias' in name]
 
-    def show_imgs_after(self, batch_img1, batch_img2_deRot, batch_nn_trans_sum, zeroRotMtrx, batch_planeNormVecImg1):
-        batch_img2_warped_after = self.img_warper.transformImageTrans(batch_img2_deRot,batch_nn_trans_sum,zeroRotMtrx,batch_planeNormVecImg1)
-        imgs_after = torch.abs(batch_img1 - batch_img2_warped_after)[0, 0, :, :]
-        show_imgs = torch.cat((batch_img1[0, :, :, :], batch_img2_warped_after[0, :, :, :], imgs_after.unsqueeze(0)), dim=1).to('cpu')
+    def show_imgs_after(self, batch_img1, batch_img2, batch_trans, batch_rotMtrx, batch_planeNormVecImg1):
+        batch_img2_warped = self.img_warper.transformImage(batch_img2,batch_trans,batch_rotMtrx,batch_planeNormVecImg1)
+        imgs_after = torch.abs(batch_img1 - batch_img2_warped)[0, 0, :, :]
+        show_imgs = torch.cat((batch_img1[0, :, :, :], batch_img2_warped[0, :, :, :], imgs_after.unsqueeze(0)), dim=1).to('cpu')
         cv2.imshow('after', show_imgs.detach().numpy().transpose(1, 2, 0))
         cv2.waitKey(-1)
 
@@ -255,9 +255,9 @@ class ICSTNStandard(nn.Module):
             timer_p0 = time.time()
 
         if self.trace_model: # for cpp
-            batch_img2_deRot = self.img_warper.transformImageTrans_Single(batch_img2,batch_homo8[:, 5:],batch_rotMtrx,batch_planeNormVecImg1)
+            batch_img2_deRot = self.img_warper.transformImage_Single(batch_img2,batch_homo8[:, 5:],batch_rotMtrx,batch_planeNormVecImg1)
         else:
-            batch_img2_deRot = self.img_warper.transformImageTrans(batch_img2,batch_homo8[:, 5:],batch_rotMtrx,batch_planeNormVecImg1)
+            batch_img2_deRot = self.img_warper.transformImage(batch_img2,batch_homo8[:, 5:],batch_rotMtrx,batch_planeNormVecImg1)
 
         if self.show_img:
             imgs_before = torch.abs(batch_img1 - batch_img2_deRot)[0, 0, :, :]
@@ -289,12 +289,14 @@ class ICSTNStandard(nn.Module):
             batch_nn_blocks_list = []
             batch_homo8 = compose_trans(batch_size, batch_nn_trans_1, batch_homo8, batch_rotMtrx) # 
             if self.self_sup:
-                batch_img2_warped_2,valid_pixel_mask = self.img_warper.transformImageTrans(batch_img2,batch_homo8[:, 5:],batch_rotMtrx,batch_planeNormVecImg1,move_out_mask=True)
+                batch_img2_warped_2,valid_pixel_mask = self.img_warper.transformImage(batch_img2,batch_homo8[:, 5:],batch_rotMtrx,batch_planeNormVecImg1,move_out_mask=True)
                 batch_nn_blocks_list.append((batch_img2_warped_2 - batch_img1)*valid_pixel_mask.float())
                 # batch_nn_blocks_list.append([batch_img2_warped_2*valid_pixel_mask.float(), batch_img1*valid_pixel_mask.float()]) # TODO SSIM
             else:
                 batch_nn_blocks_list.append(batch_homo8)
             if self.num_blocks == 1:
+                if self.self_sup:
+                    batch_nn_blocks_list.append(batch_homo8)
                 return batch_nn_blocks_list
         else:
             netTimeBlock1 = (time.time() - timer_p1)*1000.0
@@ -311,9 +313,9 @@ class ICSTNStandard(nn.Module):
 
         ## block 2
         if self.trace_model: # for cpp
-            batch_img2_warped_2 = self.img_warper.transformImageTrans_Single(batch_img2_deRot,batch_nn_trans_sum,zeroRotMtrx,batch_planeNormVecImg1)
+            batch_img2_warped_2 = self.img_warper.transformImage_Single(batch_img2_deRot,batch_nn_trans_sum,zeroRotMtrx,batch_planeNormVecImg1)
         else:
-            batch_img2_warped_2 = self.img_warper.transformImageTrans(batch_img2_deRot,batch_nn_trans_sum,zeroRotMtrx,batch_planeNormVecImg1)
+            batch_img2_warped_2 = self.img_warper.transformImage(batch_img2_deRot,batch_nn_trans_sum,zeroRotMtrx,batch_planeNormVecImg1)
 
         cat_imgs = torch.cat((batch_img1, batch_img2_warped_2), dim=1) # torch.Size([batch_size, 2, H, W])
         
@@ -332,12 +334,14 @@ class ICSTNStandard(nn.Module):
         if self.training:
             batch_homo8 = compose_trans(batch_size, batch_nn_trans_2, batch_homo8, batch_rotMtrx) # 
             if self.self_sup:
-                batch_img2_warped_3,valid_pixel_mask = self.img_warper.transformImageTrans(batch_img2,batch_homo8[:, 5:],batch_rotMtrx,batch_planeNormVecImg1,move_out_mask=True)
+                batch_img2_warped_3,valid_pixel_mask = self.img_warper.transformImage(batch_img2,batch_homo8[:, 5:],batch_rotMtrx,batch_planeNormVecImg1,move_out_mask=True)
                 batch_nn_blocks_list.append((batch_img2_warped_3 - batch_img1)*valid_pixel_mask.float())
                 # batch_nn_blocks_list.append([batch_img2_warped_3*valid_pixel_mask.float(), batch_img1*valid_pixel_mask.float()]) # TODO SSIM
             else:
                 batch_nn_blocks_list.append(batch_homo8)
             if self.num_blocks == 2:
+                if self.self_sup:
+                    batch_nn_blocks_list.append(batch_homo8)
                 return batch_nn_blocks_list
         else:
             netTimeBlock2 = (time.time() - timer_p2)*1000.0
@@ -354,9 +358,9 @@ class ICSTNStandard(nn.Module):
 
         ## block 3
         if self.trace_model: # for cpp
-            batch_img2_warped_3 = self.img_warper.transformImageTrans_Single(batch_img2_deRot,batch_nn_trans_sum,zeroRotMtrx,batch_planeNormVecImg1)
+            batch_img2_warped_3 = self.img_warper.transformImage_Single(batch_img2_deRot,batch_nn_trans_sum,zeroRotMtrx,batch_planeNormVecImg1)
         else:
-            batch_img2_warped_3 = self.img_warper.transformImageTrans(batch_img2_deRot,batch_nn_trans_sum,zeroRotMtrx,batch_planeNormVecImg1)
+            batch_img2_warped_3 = self.img_warper.transformImage(batch_img2_deRot,batch_nn_trans_sum,zeroRotMtrx,batch_planeNormVecImg1)
 
         cat_imgs = torch.cat((batch_img1, batch_img2_warped_3), dim=1)
         
@@ -375,12 +379,14 @@ class ICSTNStandard(nn.Module):
         if self.training:
             batch_homo8 = compose_trans(batch_size, batch_nn_trans_3, batch_homo8, batch_rotMtrx) # 
             if self.self_sup:
-                batch_img2_warped_4,valid_pixel_mask = self.img_warper.transformImageTrans(batch_img2,batch_homo8[:, 5:],batch_rotMtrx,batch_planeNormVecImg1,move_out_mask=True)
+                batch_img2_warped_4,valid_pixel_mask = self.img_warper.transformImage(batch_img2,batch_homo8[:, 5:],batch_rotMtrx,batch_planeNormVecImg1,move_out_mask=True)
                 batch_nn_blocks_list.append((batch_img2_warped_4 - batch_img1)*valid_pixel_mask.float())
                 # batch_nn_blocks_list.append([batch_img2_warped_4*valid_pixel_mask.float(), batch_img1*valid_pixel_mask.float()]) # TODO SSIM
             else:
                 batch_nn_blocks_list.append(batch_homo8)
             if self.num_blocks == 3:
+                if self.self_sup:
+                    batch_nn_blocks_list.append(batch_homo8)
                 return batch_nn_blocks_list
         else:
             netTimeBlock3 = (time.time() - timer_p3)*1000.0
