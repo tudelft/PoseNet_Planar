@@ -63,8 +63,14 @@ def train_pose(train_loader, PoseNet_model, optimizer, epoch, train_writer, n_it
         # 3. loss
         for block_num in range(PoseNet_model.num_blocks):
 
-            if args.self_supervised: # self-supervised, charbonnier
+            if args.self_supervised: # self-supervised
+		# charbonnier loss
                 block_loss = torch.mean(charbonnier(homo8_1to2_nn_blockList[block_num])) + torch.mean(charbonnier(homo8_2to1_nn_blockList[block_num]))
+
+                # # L1 loss
+                # block_loss = torch.mean(torch.nn.L1Loss()(homo8_1to2_nn_blockList[block_num], torch.zeros(homo8_1to2_nn_blockList[block_num].size()).to(device))) + \
+                #              torch.mean(torch.nn.L1Loss()(homo8_2to1_nn_blockList[block_num], torch.zeros(homo8_2to1_nn_blockList[block_num].size()).to(device)))
+
                 # TODO SSIM ssim_loss
             else: # supervised with ground truth
                 homo8_1to2_blockError = homo8_1to2_GT - homo8_1to2_nn_blockList[block_num]
