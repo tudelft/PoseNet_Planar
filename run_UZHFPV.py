@@ -13,23 +13,32 @@ from util import absolutePose2homo8Pose
 from ahrs import *
 
 # NOTE change the dataset directory and the number of sequence to run here
-dataset_folder = '/home/yingfu/datasets/UZH-FPV/raw_set_test/' # /home/adr/datasets/UZHFPV/
-sequence_num = '14' # 2 4 9 12 13 14
+dataset_folder = '/home/yingfu/datasets/UZH-FPV/' # /home/adr/datasets/UZHFPV/
+flight_environment = 'indoor' # outdoor / indoor 
+sequence_num = '2' # 1 / 2 4 9 12 13 14
 
 # whether to use the prior pose
 use_prior_pose = False #  False True
 imwrite = False
 # equalizeHist = False
 
-sequence = 'indoor_45_' + sequence_num + '_snapdragon_with_gt' 
+if flight_environment == 'outdoor':
+    sequence = 'outdoor_45_' + sequence_num + '_snapdragon_with_gt'
+    cameraMatrixUZHFPV = np.array([[275.3385453506587, 0, 315.7697752181792],
+                                    [0, 275.0852058534152, 233.72625444124952],
+                                    [0, 0, 1]])
+    distCoeffsUZHFPV = np.array([-0.017811595366268803, 0.04897078939103475, -0.041363300782847834, 0.011440891936886532]) # fish eye
+
+else:
+    sequence = 'indoor_45_' + sequence_num + '_snapdragon_with_gt'
+    cameraMatrixUZHFPV = np.array([[275.46015578667294, 0, 315.958384100568],
+                                    [0, 274.9948095922592, 242.7123497822731],
+                                    [0, 0, 1]])
+    distCoeffsUZHFPV = np.array([-6.545154718304953e-06, -0.010379525898159981, 0.014935312423953146, -0.005639061406567785]) # fish eye
+
 results_save_path = dataset_folder+sequence+'/PoseNet_Planar_results/'
 
 R2D = 180.0/math.pi
-
-cameraMatrixUZHFPV = np.array([[275.46015578667294, 0, 274.9948095922592],
-                               [0, 315.958384100568, 242.7123497822731],
-                               [0, 0, 1]])
-distCoeffsUZHFPV = np.array([-6.545154718304953e-06, -0.010379525898159981, 0.014935312423953146, -0.005639061406567785]) # fish eye
 FoV = 45.0*2
 networkCameraMatrix = np.array([[(320.0-1.0)/2.0/math.tan(FoV/180*3.14159265/2), 0, (320.0-1.0)/2.0*1],
                 [0, (320.0-1.0)/2.0/math.tan(FoV/180*3.14159265/2), (224.0-1.0)/2.0*1],
@@ -51,6 +60,9 @@ imu_file = dataset_folder+sequence+'/imu.txt'
 img_stream_file = dataset_folder+sequence+'/left_images.txt'
 img_folder = dataset_folder+sequence+'/img/'
 undistort_img_save_folder = dataset_folder+sequence+'/undistorted_img_left/'
+
+if imwrite and not os.path.exists(undistort_img_save_folder):
+    os.makedirs(undistort_img_save_folder)
 
 # roughly calculate the bias of gyro by averaging the measurements when the drone is stationary
 if sequence_num == '2':
@@ -76,6 +88,13 @@ if sequence_num == '13':
 elif sequence_num == '14':
     bias_gyro = np.array([-0.0038903458, 0.00361550756, 0.00328527558]) # 
     # bias_acc = np.array([-0.021202941, 0.0058609755384, -0.0842127504349]) #  
+    bias_acc = np.array([-0.0, 0.0, -0.0])
+elif sequence_num == '1':
+    bias_gyro = np.array([-0.024039822921, -0.0013624732392, 0.010666493]) # 
+    # bias_acc = np.array([-0.7924718946218211, -0.123195408187832, 0.023751075744671724]) #  
+    bias_acc = np.array([-0.0, 0.0, -0.0])
+else:
+    bias_gyro = np.array([0.0, 0.0, 0.0]) # 
     bias_acc = np.array([-0.0, 0.0, -0.0])
 
 timeshift_cam_imu = -0.01484888826656275
@@ -283,7 +302,8 @@ def image_pair_posenet(grayscale_input_transform, img1_file, img2_file, img1_Eul
 
     before_net = time.time()
     output = posenet_model(img1,img2,homo8_1to2_initial.to(device))
-    # print("Network run time:", time.time() - before_net)
+    print("Network run time (Hz):", 1 / (time.time() - before_net))
+    # output = [torch.ones(1, 8)] # for purely saving undistorted images (speed up by not running the network)
 
     return np.array([output[0][0, 5].to('cpu'), output[0][0, 6].to('cpu'), output[0][0, 7].to('cpu')])
 
